@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ES2017",
+      "module": "commonjs",
+      "types": ["@citizenfx/server", "@types/node", "@types/qs", "@types/sqlstring"],
+    },
+    "include": [
+      "source/mysql/**/*",
+      "source/fivem/**/*",
+      "source/mysql/*",
+      "source/fivem/*",
+      "source/server.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+}
