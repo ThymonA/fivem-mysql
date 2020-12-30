@@ -28,7 +28,8 @@
 */
 
 import { CFXCallback, OkPacket, RowDataPacket, ResultSetHeader } from '../fivem/callback';
-import MySQLHelper from './helpers';
+import { fixParameters, fixQuery } from './helpers';
+import { Tracer } from 'tracer';
 import { Pool, PoolOptions, ConnectionOptions, QueryError, createPool } from 'mysql2';
 
 declare type keyValue = { [key: string]: any };
@@ -37,8 +38,10 @@ class MySQLServer {
     ready: boolean = false;
     options: PoolOptions;
     pool: Pool;
+    logger: Tracer.Logger;
 
-    constructor(connectionOptions: ConnectionOptions, readyCallback?: Function) {
+    constructor(connectionOptions: ConnectionOptions, logger: Tracer.Logger, readyCallback?: Function) {
+        this.logger = logger;
         this.options = {
             ...connectionOptions,
             ...{
@@ -58,20 +61,15 @@ class MySQLServer {
         }
     }
 
-    beginTransaction(callback: CFXCallback) {
+    beginTransaction(callback: CFXCallback, resource: string) {
         return this.pool.beginTransaction((err) => {
-            if (err) {
-                callback(false);
-                return;
-            }
-
-            callback([]);
+            err ? this.errorCallback(err, callback, resource) : callback([]);
         });
     }
 
-    commit(callback: CFXCallback) {
+    commit(callback: CFXCallback, resource: string) {
         return this.pool.commit((err) => {
-            err ? callback(false) : callback([]);
+            err ? this.errorCallback(err, callback, resource) : callback([]);
         });
     }
 
@@ -79,24 +77,30 @@ class MySQLServer {
         return this.pool.rollback(() => callback([]));
     }
 
-    end() { this.pool?.end(); }
+    end(resource: string) {
+        this.pool?.end((err) => {
+            if (err) {
+                this.logger.error(`Resource '${resource}' throw an SQL error\n> ^1Message: ^7${err.message}`);
+            }
+        });
+    }
 
-    execute(query: string, parameters: keyValue, callback: CFXCallback) {
+    execute(query: string, parameters: keyValue, callback: CFXCallback, resource: string) {
         const config = this.pool?.config;
         
-        parameters = MySQLHelper.fixParameters(parameters, config?.stringifyObjects, config?.timezone);
-        query = MySQLHelper.fixQuery(query);
+        parameters = fixParameters(parameters, config?.stringifyObjects, config?.timezone);
+        query = fixQuery(query);
 
         const sql = this.pool?.format(query, parameters);
 
         return this.pool?.query(sql, parameters, (err, result) => {
-            err ? this.errorCallback(err, callback) : callback(result);
+            err ? this.errorCallback(err, callback, resource, query) : callback(result, query);
         });
     }
 
-    errorCallback(error: QueryError, callback: CFXCallback, rollback?: boolean) {
-        rollback ? this.pool.rollback(() => callback([])) : callback([]);
-        console.error(error.message);
+    errorCallback(error: QueryError, callback: CFXCallback, resource: string, query?: string) {
+        this.logger.error(`Resource '${resource}' throw an SQL error\n> ^1Message: ^7${error.message}`);
+        callback([], query);
     }
 
     isReady() { return this.ready; }

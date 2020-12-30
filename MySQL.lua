@@ -30,11 +30,13 @@ local rawget = rawget
 local next = next
 local setmetatable = setmetatable
 local GetResourceState = GetResourceState
+local GetCurrentResourceName = GetCurrentResourceName
 local CreateThread = Citizen.CreateThread
 local Wait = Citizen.Wait
-
-local export = exports['fivem-mysql']
-local mysql = setmetatable({}, {})
+local mysql = setmetatable({
+    resource_name = 'fivem-mysql',
+    current_resource_name = GetCurrentResourceName()
+}, {})
 
 function mysql:typeof(input)
     if (input == nil) then
@@ -70,45 +72,61 @@ end
 function mysql:insert(query, params)
     params = params or {}
 
-    assert(self:typeof(query) == 'string', 'SQL query must be a string')
-    assert(self:typeof(params) == 'table', 'Parameters must be a table')
+    local res, finished = nil, false
 
-    params = self:safeParams(params)
+    self:insertAsync(query, params, function(result)
+        res = result
+        finished = true
+    end)
 
-    return export:insert(query, params)
+    repeat Citizen.Wait(0) until finished == true
+
+    return res
 end
 
 function mysql:fetchAll(query, params)
     params = params or {}
 
-    assert(self:typeof(query) == 'string', 'SQL query must be a string')
-    assert(self:typeof(params) == 'table', 'Parameters must be a table')
+    local res, finished = nil, false
 
-    params = self:safeParams(params)
+    self:fetchAllAsync(query, params, function(result)
+        res = result
+        finished = true
+    end)
 
-    return export:fetchAll(query, params)
+    repeat Citizen.Wait(0) until finished == true
+
+    return res
 end
 
 function mysql:fetchScalar(query, params)
     params = params or {}
 
-    assert(self:typeof(query) == 'string', 'SQL query must be a string')
-    assert(self:typeof(params) == 'table', 'Parameters must be a table')
+    local res, finished = nil, false
 
-    params = self:safeParams(params)
+    self:fetchScalarAsync(query, params, function(result)
+        res = result
+        finished = true
+    end)
 
-    return export:fetchScalar(query, params)
+    repeat Citizen.Wait(0) until finished == true
+
+    return res
 end
 
 function mysql:fetchFirst(query, params)
     params = params or {}
 
-    assert(self:typeof(query) == 'string', 'SQL query must be a string')
-    assert(self:typeof(params) == 'table', 'Parameters must be a table')
+    local res, finished = nil, false
 
-    params = self:safeParams(params)
+    self:fetchFirstAsync(query, params, function(result)
+        res = result
+        finished = true
+    end)
 
-    return export:fetchFirst(query, params)
+    repeat Citizen.Wait(0) until finished == true
+
+    return res
 end
 
 function mysql:insertAsync(query, params, callback)
@@ -120,7 +138,7 @@ function mysql:insertAsync(query, params, callback)
 
     params = self:safeParams(params)
 
-    export:insertAsync(query, params, callback)
+    exports[self.resource_name]:insertAsync(query, params, callback, self.current_resource_name)
 end
 
 function mysql:fetchAllAsync(query, params, callback)
@@ -132,7 +150,7 @@ function mysql:fetchAllAsync(query, params, callback)
 
     params = self:safeParams(params)
 
-    export:fetchAllAsync(query, params, callback)
+    exports[self.resource_name]:fetchAllAsync(query, params, callback, self.current_resource_name)
 end
 
 function mysql:fetchScalarAsync(query, params, callback)
@@ -144,7 +162,7 @@ function mysql:fetchScalarAsync(query, params, callback)
 
     params = self:safeParams(params)
 
-    export:fetchScalarAsync(query, params, callback)
+    exports[self.resource_name]:fetchScalarAsync(query, params, callback, self.current_resource_name)
 end
 
 function mysql:fetchFirstAsync(query, params, callback)
@@ -156,7 +174,7 @@ function mysql:fetchFirstAsync(query, params, callback)
 
     params = self:safeParams(params)
 
-    export:fetchFirstAsync(query, params, callback)
+    exports[self.resource_name]:fetchFirstAsync(query, params, callback, self.current_resource_name)
 end
 
 function mysql:ready(callback)
@@ -165,8 +183,8 @@ function mysql:ready(callback)
 
         assert(self:typeof(cb) == 'function', 'Callback must be a function')
 
-        while GetResourceState('fivem-mysql') ~= 'started' do Wait(0) end
-        while not export:isReady() do Wait(0) end
+        while GetResourceState(self.resource_name) ~= 'started' do Wait(0) end
+        while not exports[self.resource_name]:isReady() do Wait(0) end
 
         cb()
     end)

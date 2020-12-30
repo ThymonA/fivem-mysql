@@ -26,6 +26,10 @@
 ┃ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ┻
 */
+
+import { console } from 'tracer';
+import { warnIfNeeded } from './mysql/helpers';
+import { GetLoggerConfig, GetSlowQueryWarning } from './tracer';
 import { MySQLServer, CFXCallback, OkPacket, ConnectionString, keyValue } from './mysql';
 
 let isReady = false;
@@ -34,83 +38,50 @@ global.exports('isReady', (): boolean => { return isReady; });
 
 const rawConnectionString = GetConvar('mysql_connection_string', 'mysql://root@localhost/fivem');
 const connectionString = ConnectionString(rawConnectionString);
-const server = new MySQLServer(connectionString, () => { isReady = true; });
-const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+const slowQueryWarning = GetSlowQueryWarning();
+const logger = console(GetLoggerConfig());
+const server = new MySQLServer(connectionString, logger, () => { isReady = true; });
 
-global.exports('insertAsync', (query: string, parameters?: keyValue, callback?: CFXCallback): void => {
-    server.execute(query, parameters, (result) => {
+global.exports('insertAsync', (query: string, parameters?: keyValue, callback?: CFXCallback, resource?: string): void => {
+    const startTime = process.hrtime();
+
+    resource = resource ?? GetInvokingResource();
+
+    server.execute(query, parameters, (result, sql) => {
+        warnIfNeeded(process.hrtime(startTime), logger, sql, resource, slowQueryWarning);
         callback((<OkPacket>result)?.insertId ?? 0);
-    });
+    }, resource);
 });
 
-global.exports('fetchAllAsync', (query: string, parameters?: keyValue, callback?: CFXCallback): void => {
-    server.execute(query, parameters, callback);
+global.exports('fetchAllAsync', (query: string, parameters?: keyValue, callback?: CFXCallback, resource?: string): void => {
+    const startTime = process.hrtime();
+
+    resource = resource ?? GetInvokingResource();
+
+    server.execute(query, parameters, (result, sql) => {
+        warnIfNeeded(process.hrtime(startTime), logger, sql, resource, slowQueryWarning);
+        callback(result);
+    }, resource);
 });
 
-global.exports('fetchScalarAsync', (query: string, parameters?: keyValue, callback?: CFXCallback): void => {
-    server.execute(query, parameters, (result) => {
+global.exports('fetchScalarAsync', (query: string, parameters?: keyValue, callback?: CFXCallback, resource?: string): void => {
+    const startTime = process.hrtime();
+
+    resource = resource ?? GetInvokingResource();
+
+    server.execute(query, parameters, (result, sql) => {
+        warnIfNeeded(process.hrtime(startTime), logger, sql, resource, slowQueryWarning);
         callback((result && result[0]) ? (Object.values(result[0])[0] ?? null) : null);
-    });
+    }, resource);
 });
 
-global.exports('fetchFirstAsync', (query: string, parameters?: keyValue, callback?: CFXCallback): void => {
-    server.execute(query, parameters, (result) => {
+global.exports('fetchFirstAsync', (query: string, parameters?: keyValue, callback?: CFXCallback, resource?: string): void => {
+    const startTime = process.hrtime();
+
+    resource = resource ?? GetInvokingResource();
+
+    server.execute(query, parameters, (result, sql) => {
+        warnIfNeeded(process.hrtime(startTime), logger, sql, resource, slowQueryWarning);
         callback((result && result[0]) ? result[0] ?? [] : []);
-    });
-});
-
-global.exports('insert', async (query: string, parameters?: keyValue): Promise<number> => {
-    let res: number = null;
-    let done: boolean = false;
-
-    server.execute(query, parameters, (result) => {
-        res = <number>(<OkPacket>result?.insertId ?? 0);
-        done = true;
-    });
-
-    do { await wait(0); } while (done == false);
-
-    return res;
-});
-
-global.exports('fetchAll', async (query: string, parameters?: keyValue): Promise<any> => {
-    let res: any = null;
-    let done: boolean = false;
-
-    server.execute(query, parameters, (result) => {
-        res = result;
-        done = true;
-    });
-
-    do { await wait(0); } while (done == false);
-
-    return res;
-});
-
-global.exports('fetchScalar', async (query: string, parameters?: keyValue): Promise<any> => {
-    let res: any = null;
-    let done: boolean = false;
-
-    server.execute(query, parameters, (result) => {
-        res = (result && result[0]) ? (Object.values(result[0])[0] ?? null) : null;
-        done = true;
-    });
-
-    do { await wait(0); } while (done == false);
-
-    return res;
-});
-
-global.exports('fetchFirst', async (query: string, parameters?: keyValue): Promise<any> => {
-    let res: any = null;
-    let done: boolean = false;
-
-    server.execute(query, parameters, (result) => {
-        res = (result && result[0]) ? result[0] ?? [] : [];
-        done = true;
-    });
-
-    do { await wait(0); } while (done == false);
-
-    return res;
+    }, resource);
 });

@@ -30,7 +30,7 @@
 import { OkPacket, RowDataPacket, ResultSetHeader } from 'mysql2';
 
 declare interface CFXCallback {
-    (result: RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader | boolean | number | any | any[]): void;
+    (result: RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader | boolean | number | any | any[], query?: string): void;
 };
 
 export {

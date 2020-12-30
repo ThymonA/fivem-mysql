@@ -7,8 +7,10 @@
     "include": [
       "source/mysql/**/*",
       "source/fivem/**/*",
+      "source/tracer/**/*",
       "source/mysql/*",
       "source/fivem/*",
+      "source/tracer/*",
       "source/server.ts"
     ],
     "exclude": [

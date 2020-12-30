@@ -32,6 +32,7 @@
     "pg-connection-string": "^2.4.0",
     "qs": "^6.9.4",
     "sqlstring": "^2.3.2",
+    "tracer": "^1.1.4",
     "ts-node": "^9.1.1"
   },
   "devDependencies": {

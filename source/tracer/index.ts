@@ -28,42 +28,36 @@
 */
 
 import { Tracer } from 'tracer';
-import { escape } from 'sqlstring';
 
-function fixQuery(query: string) {
-    if (typeof query != 'string') { return ''; }
+const resource_name = GetCurrentResourceName();
 
-    return query.replace(/[@]/g, ':');
-}
-
-function fixParameters(params: { [key: string]: any }, stringifyObjects?: boolean, timezone?: string) {
-    const result = { } as { [key: string]: string };
-    const keys = Object.keys(params);
-
-    for (var i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const value = params[key];
-        const newKey = key.replace(/[@|:]/g, '');
-        
-        result[newKey] = escape(value, stringifyObjects, timezone);
-        
-        if (result[newKey].startsWith("'")) { result[newKey] = result[newKey].substr(1); }
-        if (result[newKey].endsWith("'")) { result[newKey] = result[newKey].substr(0, result[newKey].length - 1); }
+function GetLoggerConfig(): Tracer.LoggerConfig {
+    return {
+        format: [
+            `^7[^4${resource_name}^7][^7{{title}}^7] ^7{{message}}^7`,
+            {
+                warn: `^7[^4${resource_name}^7][^3{{title}}^7] ^3{{message}}^7`,
+                error: `^7[^4${resource_name}^7][^1{{title}}^7] ^1{{message}}^7`,
+                fatal: `^7[^4${resource_name}^7][^1{{title}}^7] ^1{{message}}^7`
+            }
+        ],
+        level: GetConvar('mysql_level', 'warn'),
+        inspectOpt: {
+            showHidden: false,
+            depth: 0
+        },
+        rootDir: GetResourcePath(GetCurrentResourceName())
     }
-
-    return result;
 }
 
-function warnIfNeeded(time: [number, number], logger: Tracer.Logger, sql: string, resource: string, interval: number) {
-    const queryTime = time[0] * 1e3 + time[1] * 1e-6;
+function GetSlowQueryWarning(): number {
+    const rawInterval = GetConvar('mysql_slow_query_warning', '500') || '500';
+    const interval = parseInt(rawInterval);
 
-    if (interval <= 0 || interval > queryTime) { return; }
-
-    logger.warn(`Resource '${resource}' executed an query that took ${queryTime.toFixed()}ms to execute\n> ^4Query: ^7${sql}\n> ^4Execution time: ^7${queryTime.toFixed()}ms`);
+    return interval > 0 ? interval : -1;
 }
 
 export {
-    fixQuery,
-    fixParameters,
-    warnIfNeeded
+    GetLoggerConfig,
+    GetSlowQueryWarning
 }
