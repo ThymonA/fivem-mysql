@@ -306,3 +306,7 @@ function MySQL.ready(callback)
         cb()
     end)
 end
+
+--- Register `MySQL` as global variable
+_G.MySQL = MySQL
+_ENV.MySQL = MySQL
