@@ -4,7 +4,7 @@
 -- ➤ GitHub:       https://github.com/ThymonA/fivem-mysql/
 -- ➤ Author:       Thymon Arens <ThymonA>
 -- ➤ Name:         FiveM MySQL
--- ➤ Version:      1.0.1
+-- ➤ Version:      1.0.2
 -- ➤ Description:  MySQL library made for FiveM
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- 𝗚𝗡𝗨 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗣𝘂𝗯𝗹𝗶𝗰 𝗟𝗶𝗰𝗲𝗻𝘀𝗲 𝘃𝟯.𝟬
@@ -37,7 +37,7 @@ game            'gta5'
 -- ┃ Information about the project
 -- ┻
 name            'FiveM-MySQL'
-version         '1.0.0'
+version         '1.0.2'
 description     'MySQL library made for FiveM'
 url             'https://github.com/ThymonA/fivem-mysql/'
 

@@ -4,7 +4,7 @@
 -- ➤ GitHub:       https://github.com/ThymonA/fivem-mysql/
 -- ➤ Author:       Thymon Arens <ThymonA>
 -- ➤ Name:         FiveM MySQL
--- ➤ Version:      1.0.1
+-- ➤ Version:      1.0.2
 -- ➤ Description:  MySQL library made for FiveM
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- 𝗚𝗡𝗨 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗣𝘂𝗯𝗹𝗶𝗰 𝗟𝗶𝗰𝗲𝗻𝘀𝗲 𝘃𝟯.𝟬
@@ -69,6 +69,21 @@ function mysql:safeParams(params)
     return params
 end
 
+function mysql:execute(query, params)
+    params = params or {}
+
+    local res, finished = nil, false
+
+    self:executeAsync(query, params, function(result)
+        res = result
+        finished = true
+    end)
+
+    repeat Citizen.Wait(0) until finished == true
+
+    return res
+end
+
 function mysql:insert(query, params)
     params = params or {}
 
@@ -127,6 +142,18 @@ function mysql:fetchFirst(query, params)
     repeat Citizen.Wait(0) until finished == true
 
     return res
+end
+
+function mysql:executeAsync(query, params, callback)
+    params = params or {}
+
+    assert(self:typeof(query) == 'string', 'SQL query must be a string')
+    assert(self:typeof(params) == 'table', 'Parameters must be a table')
+    assert(self:typeof(callback) == 'function', 'Callback must be a function')
+
+    params = self:safeParams(params)
+
+    exports[self.resource_name]:executeAsync(query, params, callback, self.current_resource_name)
 end
 
 function mysql:insertAsync(query, params, callback)

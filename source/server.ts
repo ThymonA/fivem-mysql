@@ -5,7 +5,7 @@
 ➤ GitHub:       https://github.com/ThymonA/fivem-mysql/
 ➤ Author:       Thymon Arens <ThymonA>
 ➤ Name:         FiveM MySQL
-➤ Version:      1.0.1
+➤ Version:      1.0.2
 ➤ Description:  MySQL library made for FiveM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 𝗚𝗡𝗨 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗣𝘂𝗯𝗹𝗶𝗰 𝗟𝗶𝗰𝗲𝗻𝘀𝗲 𝘃𝟯.𝟬
@@ -27,8 +27,7 @@
 ┻
 */
 
-import { console } from 'tracer';
-import { warnIfNeeded } from './mysql/helpers';
+import { console, Tracer } from 'tracer';
 import { GetLoggerConfig, GetSlowQueryWarning } from './tracer';
 import { MySQLServer, CFXCallback, OkPacket, ConnectionString, keyValue } from './mysql';
 
@@ -41,6 +40,14 @@ const connectionString = ConnectionString(rawConnectionString);
 const slowQueryWarning = GetSlowQueryWarning();
 const logger = console(GetLoggerConfig());
 const server = new MySQLServer(connectionString, logger, () => { isReady = true; });
+
+function warnIfNeeded(time: [number, number], logger: Tracer.Logger, sql: string, resource: string, interval: number) {
+    const queryTime = time[0] * 1e3 + time[1] * 1e-6;
+
+    if (interval <= 0 || interval > queryTime) { return; }
+
+    logger.warn(`Resource '${resource}' executed an query that took ${queryTime.toFixed()}ms to execute\n> ^4Query: ^7${sql}\n> ^4Execution time: ^7${queryTime.toFixed()}ms`);
+}
 
 global.exports('executeAsync', (query: string, parameters?: keyValue, callback?: CFXCallback, resource?: string): void => {
     const startTime = process.hrtime();

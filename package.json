@@ -1,6 +1,6 @@
 {
   "name": "fivem-mysql",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "MySQL library made for FiveM",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "@types/deasync": "^0.1.1",
     "@types/node": "^14.14.16",
     "@types/sqlstring": "^2.3.0",
+    "cardinal": "^2.1.1",
     "mysql2": "^2.2.5",
     "pg-connection-string": "^2.4.0",
     "qs": "^6.9.4",

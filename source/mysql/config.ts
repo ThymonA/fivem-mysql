@@ -5,7 +5,7 @@
 ➤ GitHub:       https://github.com/ThymonA/fivem-mysql/
 ➤ Author:       Thymon Arens <ThymonA>
 ➤ Name:         FiveM MySQL
-➤ Version:      1.0.1
+➤ Version:      1.0.2
 ➤ Description:  MySQL library made for FiveM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 𝗚𝗡𝗨 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗣𝘂𝗯𝗹𝗶𝗰 𝗟𝗶𝗰𝗲𝗻𝘀𝗲 𝘃𝟯.𝟬
@@ -27,9 +27,20 @@
 ┻
 */
 
+import { format } from 'sqlstring';
 import { parse } from 'qs';
 import { parse as ConnectionString } from 'pg-connection-string';
 import { ConnectionOptions } from 'mysql2';
+
+function fixString(query: string): string {
+    if (query.startsWith("'") && query.endsWith("'")) {
+        query = query.substr(1, (query.length - 1));
+
+        return fixString(query);
+    }
+
+    return query;
+}
 
 function getConnectionFromString(rawConnectionString: string): ConnectionOptions {
     let connection = {} as ConnectionOptions;
@@ -59,6 +70,35 @@ function getConnectionFromString(rawConnectionString: string): ConnectionOptions
             port: typeof connectionString.port == 'number' && (connectionString.port > 0 && connectionString.port < 65535) ? connectionString.port : null,
             database: typeof connectionString.database == 'string' ? connectionString.database : null
         }
+    }
+
+    connection.typeCast = true;
+    connection.charset = 'UTF8_GENERAL_CI'
+    connection.supportBigNumbers = true;
+    connection.stringifyObjects = false;
+    connection.insecureAuth = true;
+    connection.dateStrings = false;
+    connection.trace = true;
+    connection.multipleStatements = true;
+    connection.queryFormat = (q, v) => {
+        let sql = q.replace(/[@]/g, ':')
+            .replace(/`'/g, '`')
+            .replace(/'`/g, '`')
+            .replace(/`"/g, '`')
+            .replace(/"`/g, '`')
+            .replace(/``/g, '`');
+        
+        sql = format(sql, v, false, 'local');
+        sql = fixString(sql);
+
+        sql = sql.replace(/[@]/g, ':')
+            .replace(/`'/g, '`')
+            .replace(/'`/g, '`')
+            .replace(/`"/g, '`')
+            .replace(/"`/g, '`')
+            .replace(/``/g, '`');
+
+        return sql;
     }
 
     return connection;
