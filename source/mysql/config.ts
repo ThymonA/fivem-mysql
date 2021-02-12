@@ -101,6 +101,10 @@ function getConnectionFromString(rawConnectionString: string): ConnectionOptions
         return sql;
     }
 
+    connection.connectionLimit = 999;
+    connection.queueLimit = 999;
+    connection.decimalNumbers = true;
+
     return connection;
 }
 
