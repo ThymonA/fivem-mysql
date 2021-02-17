@@ -77,7 +77,7 @@ function getConnectionFromString(rawConnectionString: string): ConnectionOptions
     connection.supportBigNumbers = true;
     connection.stringifyObjects = false;
     connection.insecureAuth = true;
-    connection.dateStrings = false;
+    connection.dateStrings = true;
     connection.trace = true;
     connection.multipleStatements = true;
     connection.queryFormat = (q, v) => {
